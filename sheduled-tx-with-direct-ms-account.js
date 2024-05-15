@@ -19,7 +19,7 @@ client.setOperator(operatorAccount, operatorKey);
 async function generatePrivateKeys({count}) {
     const privateKeys = [];
     for (let i = 0; i < count; i++) {
-        privateKeys.push(PrivateKey.generate());
+        privateKeys.push(PrivateKey.generateECDSA());
     }
     return privateKeys;
 }
@@ -79,7 +79,9 @@ async function signScheduledTransaction({scheduleId, privateKeys, signerCount}) 
             .setScheduleId(scheduleId)
             .freezeWith(client)
             .sign(privateKeys[i]);
-        await tx.execute(client);
+        const txResponse = await tx.execute(client);
+
+        console.log(`Signed Scheduled transaction: ${getHashScanTransactionUrl({id: txResponse.transactionId})} ----- ${i + 1}/${signerCount}`);
         console.log("Signed transaction with " + privateKeys[i].publicKey);
     }
 }
@@ -93,12 +95,11 @@ async function checkStatus({txId}) {
 
 
     // wait 5 seconds (Apparently not needed on-chain changes need time to be available from mirror node)
-    console.log("Waiting 5 seconds...");
     await new Promise(resolve => setTimeout(resolve, 5000));
     let response = await fetch(`https://testnet.mirrornode.hedera.com/api/v1/transactions/${cleanedScheduledTxId}`);
     response = await response.json();
 
-    console.log(JSON.stringify(response, null, 2));
+    //console.log(JSON.stringify(response, null, 2));
 }
 
 function getHashScanAccountUrl({id}) {
@@ -111,10 +112,10 @@ function getHashScanTransactionUrl({id}) {
 
 async function main() {
     // generate private keys
-    const privateKeys = await generatePrivateKeys({count: 7});
-    const threshold = 7;
-    const signerCount = 5;
-    privateKeys.push(operatorKey);
+    const privateKeys = await generatePrivateKeys({count: 5});
+    const threshold = 4;
+    const signerCount = 2;
+    //privateKeys.push(operatorKey);
     console.log(`Private keys generated: ${JSON.stringify(privateKeys.map(
         key => key.publicKey.toString()
     ), null, 2)}`);
